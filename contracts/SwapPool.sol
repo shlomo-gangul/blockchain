@@ -3,13 +3,13 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract SwapPool {
-    address tokenA;
+    address public tokenA;
 
-    address tokenB;
+    address public tokenB;
 
-    uint256 balanceA;
+    uint256 public balanceA;
 
-    uint256 balanceB;
+    uint256 public balanceB;
 
     constructor(address _tokenA, address _tokenB) {
         tokenA = _tokenA;

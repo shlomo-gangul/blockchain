@@ -1,4 +1,5 @@
 import { expect } from "chai";
+import { BaseContract } from "ethers";
 import { ethers } from "hardhat";
 
 describe("SwapPool Contract", function () {
@@ -7,35 +8,36 @@ describe("SwapPool Contract", function () {
   let owner: any;
   let addr1: any;
   let addr2: any;
-  let tokenA: any;
-  let tokenB: any;
+  let spaceToken: any;
+  let timeToken: any;
 
   beforeEach(async function () {
     // Deploy Mock ERC20 Tokens and SwapPool
     const Token = await ethers.getContractFactory("Token");
-    tokenA = await Token.deploy("Token A", "TKNA", 1000000);
-    tokenB = await Token.deploy("Token B", "TKNB", 1000000);
-
-    console.log("tokenA", tokenA);
+    spaceToken = await Token.deploy("Space", "SPC", BigInt(1000000e18));
+    timeToken = await Token.deploy("Time", "TME", BigInt(1000000e18));
 
     [owner, addr1, addr2] = await ethers.getSigners();
 
     SwapPool = await ethers.getContractFactory("SwapPool");
-    swapPool = await SwapPool.deploy(tokenA.address, tokenB.address);
+    swapPool = await SwapPool.deploy(await spaceToken.getAddress(), await timeToken.getAddress());
   });
 
   describe("Deployment", function () {
     it("Should set the right token addresses", async function () {
-      expect(await swapPool.tokenA()).to.equal(tokenA.address);
-      expect(await swapPool.tokenB()).to.equal(tokenB.address);
+      expect(await swapPool.tokenA()).to.equal(await spaceToken.getAddress());
+      expect(await swapPool.tokenB()).to.equal(await timeToken.getAddress());
     });
   });
 
   describe("Deposit", function () {
     it("Should deposit tokens correctly", async function () {
+
+      const poolAddress = await swapPool.getAddress();
+
       // You need to approve before depositing
-      await tokenA.connect(owner).approve(swapPool.address, 500);
-      await tokenB.connect(owner).approve(swapPool.address, 500);
+      await spaceToken.connect(owner).approve(poolAddress, 500);
+      await timeToken.connect(owner).approve(poolAddress, 500);
 
       await swapPool.connect(owner).deposit(500, 500);
 
@@ -46,9 +48,13 @@ describe("SwapPool Contract", function () {
 
   describe("Withdraw", function () {
     it("Should withdraw tokens correctly", async function () {
+
+      const poolAddress = await swapPool.getAddress();
+
+
       // First deposit tokens
-      await tokenA.connect(owner).approve(swapPool.address, 500);
-      await tokenB.connect(owner).approve(swapPool.address, 500);
+      await spaceToken.connect(owner).approve(poolAddress, 500);
+      await timeToken.connect(owner).approve(poolAddress, 500);
       await swapPool.connect(owner).deposit(500, 500);
 
       // Now withdraw
@@ -61,14 +67,25 @@ describe("SwapPool Contract", function () {
 
   describe("Swap", function () {
     it("Should swap tokens correctly", async function () {
+      const poolAddress = await swapPool.getAddress();
+
+      const timeTokenAddress = await timeToken.getAddress();
+
+      const spaceTokenAddress = await spaceToken.getAddress();
+
+      // First deposit tokens
+      await spaceToken.connect(owner).approve(poolAddress, 500);
+      await timeToken.connect(owner).approve(poolAddress, 500);
+      await swapPool.connect(owner).deposit(500, 500);
+
       // Assuming addr2 wants to swap 100 TokenA for TokenB
-      await tokenA.connect(owner).approve(swapPool.address, 100);
+      await spaceToken.connect(owner).approve(poolAddress, 100);
 
-      const initialBalanceTokenBAddr2 = await tokenB.balanceOf(owner.address);
+      const initialBalanceTokenBAddr2 = await timeToken.balanceOf(owner.address);
 
-      await swapPool.connect(owner).swap(tokenA.address, tokenB.address, 100);
+      await swapPool.connect(owner).swap(spaceTokenAddress, timeTokenAddress, 100);
 
-      const finalBalanceTokenBAddr2 = await tokenB.balanceOf(owner.address);
+      const finalBalanceTokenBAddr2 = await timeToken.balanceOf(owner.address);
 
       expect(finalBalanceTokenBAddr2 > initialBalanceTokenBAddr2);
     });
