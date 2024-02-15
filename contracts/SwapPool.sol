@@ -11,6 +11,10 @@ contract SwapPool {
 
     uint256 public balanceB;
 
+    uint256 public priceA;
+
+    uint256 public priceB;
+
     constructor(address _tokenA, address _tokenB) {
         tokenA = _tokenA;
         tokenB = _tokenB;
@@ -23,6 +27,7 @@ contract SwapPool {
 
         balanceA += amountA;
         balanceB += amountB;
+        priceChance();
     }
 
     //wirthdraw
@@ -32,6 +37,7 @@ contract SwapPool {
 
         balanceA -= amountA;
         balanceB -= amountB;
+        priceChance();
     }
 
     //swap
@@ -40,13 +46,17 @@ contract SwapPool {
         address toToken,
         uint256 amountIn
     ) external {
-        uint256 priceA = balanceA / balanceB;
-        uint256 priceB = balanceB / balanceA;
+        priceChance();
 
         uint256 outAmount = fromToken == tokenA
             ? amountIn * priceA
             : amountIn * priceB;
 
         ERC20(toToken).transfer(msg.sender, outAmount);
+    }
+
+    function priceChance() internal {
+        priceA = balanceA / balanceB;
+        priceB = balanceB / balanceA;
     }
 }
