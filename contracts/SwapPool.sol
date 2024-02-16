@@ -27,7 +27,7 @@ contract SwapPool {
 
         balanceA += amountA;
         balanceB += amountB;
-        priceChance();
+        priceChange();
     }
 
     //wirthdraw
@@ -37,7 +37,7 @@ contract SwapPool {
 
         balanceA -= amountA;
         balanceB -= amountB;
-        priceChance();
+        priceChange();
     }
 
     //swap
@@ -46,16 +46,19 @@ contract SwapPool {
         address toToken,
         uint256 amountIn
     ) external {
-        priceChance();
+        priceChange();
 
         uint256 outAmount = fromToken == tokenA
             ? amountIn * priceA
             : amountIn * priceB;
 
+        ERC20(fromToken).transferFrom(msg.sender, address(this), amountIn);
         ERC20(toToken).transfer(msg.sender, outAmount);
+        fromToken == tokenA ? balanceA += amountIn : balanceA -= outAmount;
+        fromToken == tokenB ? balanceB += amountIn : balanceB -= outAmount;
     }
 
-    function priceChance() internal {
+    function priceChange() internal {
         priceA = balanceA / balanceB;
         priceB = balanceB / balanceA;
     }

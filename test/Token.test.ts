@@ -94,40 +94,58 @@ describe("SwapPool Contract", function () {
   // });
 
   describe("Compare", function () {
-    it("Should compare the price of the tokens in the pool", async function () {
+    it("Should swap form TME to SPC and show the diffrence", async function () {
       const poolAddress = await swapPool.getAddress();
+      const timeTokenAddress = await timeToken.getAddress();
+      const spaceTokenAddress = await spaceToken.getAddress();
       const priceChangesA = [];
       const priceChangesB = [];
       // First deposit tokens
-      await spaceToken.connect(owner).approve(poolAddress, BigInt(1e18));
-      await timeToken.connect(owner).approve(poolAddress, BigInt(1e18));
-      await swapPool.connect(owner).deposit(BigInt(1e18), BigInt(1e18));
-      // withdraw 500 tokens  from A to B
-      await swapPool.connect(owner).withdraw(BigInt(0.5e18), 0);
+      await spaceToken.connect(owner).approve(poolAddress, BigInt(10e18));
+      await timeToken.connect(owner).approve(poolAddress, BigInt(10e18));
+      await swapPool.connect(owner).deposit(BigInt(10e18), BigInt(10e18));
+      await timeToken.connect(owner).transfer(addr1.address, BigInt(5e18));
+      // swap 0.2e18 tokens  from TME to SPC
+      console.log("TME:", await timeToken.balanceOf(addr1.address));
+      console.log("SPC:", await spaceToken.balanceOf(addr1.address));
+      await timeToken.connect(addr1).approve(poolAddress, BigInt(1e18));
+      await swapPool
+        .connect(addr1)
+        .swap(timeTokenAddress, spaceTokenAddress, BigInt(1e18));
+      console.log("TME:", await timeToken.balanceOf(addr1.address));
+      console.log("SPC:", await spaceToken.balanceOf(addr1.address));
       console.log("balance A:", await swapPool.balanceA());
       console.log("balance B:", await swapPool.balanceB());
       console.log("price A:", BigInt(await swapPool.priceA()));
       console.log("price B:", BigInt(await swapPool.priceB()));
       priceChangesA.push(await swapPool.priceA());
       priceChangesB.push(await swapPool.priceB());
-      await swapPool.connect(owner).withdraw(BigInt(0.249e18), 0);
-
+      await timeToken.connect(addr1).approve(poolAddress, BigInt(1e18));
+      await swapPool
+        .connect(addr1)
+        .swap(timeTokenAddress, spaceTokenAddress, BigInt(1e18));
+      console.log("TME:", await timeToken.balanceOf(addr1.address));
+      console.log("SPC:", await spaceToken.balanceOf(addr1.address));
       console.log("balance A:", await swapPool.balanceA());
       console.log("balance B:", await swapPool.balanceB());
       console.log("price A:", BigInt(await swapPool.priceA()));
       console.log("price B:", BigInt(await swapPool.priceB()));
       priceChangesA.push(await swapPool.priceA());
       priceChangesB.push(await swapPool.priceB());
-      await swapPool.connect(owner).withdraw(BigInt(0.1e18), 0);
-
+      await timeToken.connect(addr1).approve(poolAddress, BigInt(1e18));
+      await swapPool
+        .connect(addr1)
+        .swap(timeTokenAddress, spaceTokenAddress, BigInt(1e18));
+      console.log("TME:", await timeToken.balanceOf(addr1.address));
+      console.log("SPC:", await spaceToken.balanceOf(addr1.address));
       console.log("balance A:", await swapPool.balanceA());
       console.log("balance B:", await swapPool.balanceB());
       console.log("price A:", BigInt(await swapPool.priceA()));
       console.log("price B:", BigInt(await swapPool.priceB()));
       priceChangesA.push(await swapPool.priceA());
       priceChangesB.push(await swapPool.priceB());
-      const balanceA = await swapPool.balanceA();
-      const balanceB = await swapPool.balanceB();
+      const priceA = await swapPool.priceA();
+      const priceB = await swapPool.priceB();
 
       console.log("tokenA:+,tokenB:*");
       for (let i = 0; i < priceChangesA.length; i++) {
@@ -137,7 +155,7 @@ describe("SwapPool Contract", function () {
       console.log(
         "______________________________________________________________"
       );
-      expect(balanceA > balanceB);
+      expect(priceA > priceB);
     });
   });
   // Add more tests for edge cases and error handling
