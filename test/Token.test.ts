@@ -104,14 +104,14 @@ describe("SwapPool Contract", function () {
       await spaceToken.connect(owner).approve(poolAddress, BigInt(10e18));
       await timeToken.connect(owner).approve(poolAddress, BigInt(10e18));
       await swapPool.connect(owner).deposit(BigInt(10e18), BigInt(10e18));
-      await timeToken.connect(owner).transfer(addr1.address, BigInt(5e18));
+      await timeToken.connect(owner).transfer(addr1.address, BigInt(9e18));
       // swap 0.2e18 tokens  from TME to SPC
       console.log("TME:", await timeToken.balanceOf(addr1.address));
       console.log("SPC:", await spaceToken.balanceOf(addr1.address));
-      await timeToken.connect(addr1).approve(poolAddress, BigInt(1e18));
+      await timeToken.connect(addr1).approve(poolAddress, BigInt(2e18));
       await swapPool
         .connect(addr1)
-        .swap(timeTokenAddress, spaceTokenAddress, BigInt(1e18));
+        .swap(timeTokenAddress, spaceTokenAddress, BigInt(2e18));
       console.log("TME:", await timeToken.balanceOf(addr1.address));
       console.log("SPC:", await spaceToken.balanceOf(addr1.address));
       console.log("balance A:", await swapPool.balanceA());
@@ -120,10 +120,10 @@ describe("SwapPool Contract", function () {
       console.log("price B:", BigInt(await swapPool.priceB()));
       priceChangesA.push(await swapPool.priceA());
       priceChangesB.push(await swapPool.priceB());
-      await timeToken.connect(addr1).approve(poolAddress, BigInt(1e18));
+      await timeToken.connect(addr1).approve(poolAddress, BigInt(3e18));
       await swapPool
         .connect(addr1)
-        .swap(timeTokenAddress, spaceTokenAddress, BigInt(1e18));
+        .swap(timeTokenAddress, spaceTokenAddress, BigInt(3e18));
       console.log("TME:", await timeToken.balanceOf(addr1.address));
       console.log("SPC:", await spaceToken.balanceOf(addr1.address));
       console.log("balance A:", await swapPool.balanceA());
