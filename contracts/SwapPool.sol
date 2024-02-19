@@ -3,6 +3,8 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract SwapPool {
+    address public owner;
+
     address public tokenA;
 
     address public tokenB;
@@ -16,6 +18,7 @@ contract SwapPool {
     uint256 public priceB;
 
     constructor(address _tokenA, address _tokenB) {
+        owner = msg.sender;
         tokenA = _tokenA;
         tokenB = _tokenB;
     }
@@ -32,6 +35,10 @@ contract SwapPool {
 
     //wirthdraw
     function withdraw(uint256 amountA, uint256 amountB) external {
+        require(msg.sender == owner, "Only the owner can withdraw");
+        require(balanceA >= amountA, "Not enough tokenA in contract");
+        require(balanceB >= amountB, "Not enough tokenB in contract");
+
         ERC20(tokenA).transfer(msg.sender, amountA);
         ERC20(tokenB).transfer(msg.sender, amountB);
 
