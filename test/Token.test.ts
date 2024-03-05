@@ -26,110 +26,155 @@ describe("SwapPool Contract", function () {
     );
   });
 
-  // describe("Deployment", function () {
-  //   it("Should set the right token addresses", async function () {
-  //     expect(await swapPool.tokenA()).to.equal(await spaceToken.getAddress());
-  //     expect(await swapPool.tokenB()).to.equal(await timeToken.getAddress());
-  //   });
-  // });
+  describe("Deployment", function () {
+    it("Should set the right token addresses", async function () {
+      expect(await swapPool.tokenA()).to.equal(await spaceToken.getAddress());
+      expect(await swapPool.tokenB()).to.equal(await timeToken.getAddress());
+    });
+  });
 
-  // describe("Deposit", function () {
-  //   it("Should deposit tokens correctly", async function () {
+  describe("Deposit", function () {
+    it("Should deposit tokens correctly", async function () {
+      const poolAddress = await swapPool.getAddress();
 
-  //     const poolAddress = await swapPool.getAddress();
+      // You need to approve before depositing
+      await spaceToken.connect(owner).approve(poolAddress, 500);
+      await timeToken.connect(owner).approve(poolAddress, 500);
 
-  //     // You need to approve before depositing
-  //     await spaceToken.connect(owner).approve(poolAddress, 500);
-  //     await timeToken.connect(owner).approve(poolAddress, 500);
+      await swapPool.connect(owner).deposit(500, 500);
 
-  //     await swapPool.connect(owner).deposit(500, 500);
+      expect(await swapPool.balanceA()).to.equal(500);
+      expect(await swapPool.balanceB()).to.equal(500);
+    });
+  });
 
-  //     expect(await swapPool.balanceA()).to.equal(500);
-  //     expect(await swapPool.balanceB()).to.equal(500);
-  //   });
-  // });
+  describe("Withdraw", function () {
+    it("Should withdraw tokens correctly", async function () {
+      const poolAddress = await swapPool.getAddress();
 
-  // describe("Withdraw", function () {
-  //   it("Should withdraw tokens correctly", async function () {
+      // First deposit tokens
+      await spaceToken.connect(owner).approve(poolAddress, 500);
+      await timeToken.connect(owner).approve(poolAddress, 500);
+      await swapPool.connect(owner).deposit(500, 500);
 
-  //     const poolAddress = await swapPool.getAddress();
+      // Now withdraw
+      await swapPool.connect(owner).withdraw(250, 250);
+      expect(await swapPool.balanceA()).to.equal(250);
+      expect(await swapPool.balanceB()).to.equal(250);
+    });
+  });
+  describe("Wrong withdraw", function () {
+    it("Should fail if the sender is not the owner", async function () {
+      const poolAddress = await swapPool.getAddress();
 
-  //     // First deposit tokens
-  //     await spaceToken.connect(owner).approve(poolAddress, 500);
-  //     await timeToken.connect(owner).approve(poolAddress, 500);
-  //     await swapPool.connect(owner).deposit(500, 500);
+      // First deposit tokens
+      await spaceToken.connect(owner).approve(poolAddress, 500);
+      await timeToken.connect(owner).approve(poolAddress, 500);
+      await swapPool.connect(owner).deposit(500, 500);
 
-  //     // Now withdraw
-  //     await swapPool.connect(owner).withdraw(250, 250);
+      // Now withdraw with wrong owner
+      await expect(
+        swapPool.connect(addr1).withdraw(220, 220)
+      ).to.be.revertedWith("Only the owner can withdraw");
+    });
+  });
 
-  //     expect(await swapPool.balanceA()).to.equal(250);
-  //     expect(await swapPool.balanceB()).to.equal(250);
-  //   });
-  // });
+  describe("Swap", function () {
+    it("Should swap tokens correctly", async function () {
+      const poolAddress = await swapPool.getAddress();
 
-  // describe("Swap", function () {
-  //   it("Should swap tokens correctly", async function () {
-  //     const poolAddress = await swapPool.getAddress();
+      const timeTokenAddress = await timeToken.getAddress();
 
-  //     const timeTokenAddress = await timeToken.getAddress();
+      const spaceTokenAddress = await spaceToken.getAddress();
 
-  //     const spaceTokenAddress = await spaceToken.getAddress();
+      // First deposit tokens
+      await spaceToken.connect(owner).approve(poolAddress, 500);
+      await timeToken.connect(owner).approve(poolAddress, 500);
+      await swapPool.connect(owner).deposit(500, 500);
 
-  //     // First deposit tokens
-  //     await spaceToken.connect(owner).approve(poolAddress, 500);
-  //     await timeToken.connect(owner).approve(poolAddress, 500);
-  //     await swapPool.connect(owner).deposit(500, 500);
+      // Assuming addr2 wants to swap 100 TokenA for TokenB
+      await spaceToken.connect(owner).approve(poolAddress, 100);
 
-  //     // Assuming addr2 wants to swap 100 TokenA for TokenB
-  //     await spaceToken.connect(owner).approve(poolAddress, 100);
+      const initialBalanceTokenBAddr2 = await timeToken.balanceOf(
+        owner.address
+      );
 
-  //     const initialBalanceTokenBAddr2 = await timeToken.balanceOf(owner.address);
+      await swapPool
+        .connect(owner)
+        .swap(spaceTokenAddress, timeTokenAddress, 100);
 
-  //     await swapPool.connect(owner).swap(spaceTokenAddress, timeTokenAddress, 100);
+      const finalBalanceTokenBAddr2 = await timeToken.balanceOf(owner.address);
 
-  //     const finalBalanceTokenBAddr2 = await timeToken.balanceOf(owner.address);
-
-  //     expect(finalBalanceTokenBAddr2 > initialBalanceTokenBAddr2);
-  //   });
-  // });
+      expect(finalBalanceTokenBAddr2 > initialBalanceTokenBAddr2);
+    });
+  });
 
   describe("Compare", function () {
-    async function performSwapAndLogDetails(tokenA: any, tokenB: any, addr: any, pool: any, amount: any) {
-      await tokenA.connect(addr).approve(pool.getAddress(), BigInt(amount));
-      await pool.connect(addr).swap(tokenA.getAddress(), tokenB.getAddress(), BigInt(amount));
-      console.log("TME:", await tokenA.balanceOf(addr.address));
-      console.log("SPC:", await tokenB.balanceOf(addr.address));
-      console.log("balance A:", await pool.balanceA());
-      console.log("balance B:", await pool.balanceB());
-      console.log("price A:", BigInt(await pool.priceA()));
-      console.log("price B:", BigInt(await pool.priceB()));
-      return { priceA: await pool.priceA(), priceB: await pool.priceB() };
-    }
-
-    it("Should swap form TME to SPC and show the difference", async function () {
+    it("Should swap form TME to SPC and show the diffrence", async function () {
       const poolAddress = await swapPool.getAddress();
-      const priceChanges = [];
-
+      const timeTokenAddress = await timeToken.getAddress();
+      const spaceTokenAddress = await spaceToken.getAddress();
+      const priceChangesA = [];
+      const priceChangesB = [];
       // First deposit tokens
       await spaceToken.connect(owner).approve(poolAddress, BigInt(10e18));
       await timeToken.connect(owner).approve(poolAddress, BigInt(10e18));
       await swapPool.connect(owner).deposit(BigInt(10e18), BigInt(10e18));
-      await timeToken.connect(owner).transfer(addr1.address, BigInt(5e18));
-
-      // Perform swaps and log details
-      for (let i = 0; i < 3; i++) {
-        const prices = await performSwapAndLogDetails(timeToken, spaceToken, addr1, swapPool, 1e18);
-        priceChanges.push(prices);
-      }
+      await timeToken.connect(owner).transfer(addr1.address, BigInt(9e18));
+      // swap 0.2e18 tokens  from TME to SPC
+      console.log("TME:", await timeToken.balanceOf(addr1.address));
+      console.log("SPC:", await spaceToken.balanceOf(addr1.address));
+      await timeToken.connect(addr1).approve(poolAddress, BigInt(2e18));
+      await swapPool
+        .connect(addr1)
+        .swap(timeTokenAddress, spaceTokenAddress, BigInt(2e18));
+      console.log("TME:", await timeToken.balanceOf(addr1.address));
+      console.log("SPC:", await spaceToken.balanceOf(addr1.address));
+      console.log("balance A:", await swapPool.balanceA());
+      console.log("balance B:", await swapPool.balanceB());
+      console.log("price A:", BigInt(await swapPool.priceA()));
+      console.log("price B:", BigInt(await swapPool.priceB()));
+      priceChangesA.push(await swapPool.priceA());
+      priceChangesB.push(await swapPool.priceB());
+      await timeToken.connect(addr1).approve(poolAddress, BigInt(1e18));
+      await swapPool
+        .connect(addr1)
+        .swap(timeTokenAddress, spaceTokenAddress, BigInt(1e18));
+      console.log("TME:", await timeToken.balanceOf(addr1.address));
+      console.log("SPC:", await spaceToken.balanceOf(addr1.address));
+      console.log("balance A:", await swapPool.balanceA());
+      console.log("balance B:", await swapPool.balanceB());
+      console.log("price A:", BigInt(await swapPool.priceA()));
+      console.log("price B:", BigInt(await swapPool.priceB()));
+      priceChangesA.push(await swapPool.priceA());
+      priceChangesB.push(await swapPool.priceB());
+      await timeToken.connect(addr1).approve(poolAddress, BigInt(1e18));
+      await swapPool
+        .connect(addr1)
+        .swap(timeTokenAddress, spaceTokenAddress, BigInt(1e18));
+      console.log("TME:", await timeToken.balanceOf(addr1.address));
+      console.log("SPC:", await spaceToken.balanceOf(addr1.address));
+      console.log("balance A:", await swapPool.balanceA());
+      console.log("balance B:", await swapPool.balanceB());
+      console.log(
+        "price A:",
+        BigInt((await swapPool.balanceA()) / (await swapPool.balanceB()))
+      );
+      console.log("price B:", BigInt(await swapPool.priceB()));
+      priceChangesA.push(await swapPool.priceA());
+      priceChangesB.push(await swapPool.priceB());
+      const priceA = await swapPool.priceA();
+      const priceB = await swapPool.priceB();
 
       console.log("tokenA:+,tokenB:*");
-      for (let i = 0; i < priceChanges.length; i++) {
-        console.log(`${"*".repeat(priceChanges[i].priceA.toString() + 1)}`);
-        console.log(`${"+".repeat(priceChanges[i].priceB.toString() + 1)}`);
+      for (let i = 0; i < priceChangesA.length; i++) {
+        console.log(`${"*".repeat(priceChangesA[i].toString() + 1)}`);
+        console.log(`${"+".repeat(priceChangesB[i].toString() + 1)}`);
       }
-      console.log("______________________________________________________________");
-
-      expect(priceChanges[priceChanges.length - 1].priceA > priceChanges[priceChanges.length - 1].priceB);
+      console.log(
+        "______________________________________________________________"
+      );
+      expect(priceA > priceB);
     });
   });
   // Add more tests for edge cases and error handling
