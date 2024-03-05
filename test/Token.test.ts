@@ -94,68 +94,42 @@ describe("SwapPool Contract", function () {
   // });
 
   describe("Compare", function () {
-    it("Should swap form TME to SPC and show the diffrence", async function () {
+    async function performSwapAndLogDetails(tokenA: any, tokenB: any, addr: any, pool: any, amount: any) {
+      await tokenA.connect(addr).approve(pool.getAddress(), BigInt(amount));
+      await pool.connect(addr).swap(tokenA.getAddress(), tokenB.getAddress(), BigInt(amount));
+      console.log("TME:", await tokenA.balanceOf(addr.address));
+      console.log("SPC:", await tokenB.balanceOf(addr.address));
+      console.log("balance A:", await pool.balanceA());
+      console.log("balance B:", await pool.balanceB());
+      console.log("price A:", BigInt(await pool.priceA()));
+      console.log("price B:", BigInt(await pool.priceB()));
+      return { priceA: await pool.priceA(), priceB: await pool.priceB() };
+    }
+
+    it("Should swap form TME to SPC and show the difference", async function () {
       const poolAddress = await swapPool.getAddress();
-      const timeTokenAddress = await timeToken.getAddress();
-      const spaceTokenAddress = await spaceToken.getAddress();
-      const priceChangesA = [];
-      const priceChangesB = [];
+      const priceChanges = [];
+
       // First deposit tokens
       await spaceToken.connect(owner).approve(poolAddress, BigInt(10e18));
       await timeToken.connect(owner).approve(poolAddress, BigInt(10e18));
       await swapPool.connect(owner).deposit(BigInt(10e18), BigInt(10e18));
       await timeToken.connect(owner).transfer(addr1.address, BigInt(5e18));
-      // swap 0.2e18 tokens  from TME to SPC
-      console.log("TME:", await timeToken.balanceOf(addr1.address));
-      console.log("SPC:", await spaceToken.balanceOf(addr1.address));
-      await timeToken.connect(addr1).approve(poolAddress, BigInt(1e18));
-      await swapPool
-        .connect(addr1)
-        .swap(timeTokenAddress, spaceTokenAddress, BigInt(1e18));
-      console.log("TME:", await timeToken.balanceOf(addr1.address));
-      console.log("SPC:", await spaceToken.balanceOf(addr1.address));
-      console.log("balance A:", await swapPool.balanceA());
-      console.log("balance B:", await swapPool.balanceB());
-      console.log("price A:", BigInt(await swapPool.priceA()));
-      console.log("price B:", BigInt(await swapPool.priceB()));
-      priceChangesA.push(await swapPool.priceA());
-      priceChangesB.push(await swapPool.priceB());
-      await timeToken.connect(addr1).approve(poolAddress, BigInt(1e18));
-      await swapPool
-        .connect(addr1)
-        .swap(timeTokenAddress, spaceTokenAddress, BigInt(1e18));
-      console.log("TME:", await timeToken.balanceOf(addr1.address));
-      console.log("SPC:", await spaceToken.balanceOf(addr1.address));
-      console.log("balance A:", await swapPool.balanceA());
-      console.log("balance B:", await swapPool.balanceB());
-      console.log("price A:", BigInt(await swapPool.priceA()));
-      console.log("price B:", BigInt(await swapPool.priceB()));
-      priceChangesA.push(await swapPool.priceA());
-      priceChangesB.push(await swapPool.priceB());
-      await timeToken.connect(addr1).approve(poolAddress, BigInt(1e18));
-      await swapPool
-        .connect(addr1)
-        .swap(timeTokenAddress, spaceTokenAddress, BigInt(1e18));
-      console.log("TME:", await timeToken.balanceOf(addr1.address));
-      console.log("SPC:", await spaceToken.balanceOf(addr1.address));
-      console.log("balance A:", await swapPool.balanceA());
-      console.log("balance B:", await swapPool.balanceB());
-      console.log("price A:", BigInt(await swapPool.priceA()));
-      console.log("price B:", BigInt(await swapPool.priceB()));
-      priceChangesA.push(await swapPool.priceA());
-      priceChangesB.push(await swapPool.priceB());
-      const priceA = await swapPool.priceA();
-      const priceB = await swapPool.priceB();
+
+      // Perform swaps and log details
+      for (let i = 0; i < 3; i++) {
+        const prices = await performSwapAndLogDetails(timeToken, spaceToken, addr1, swapPool, 1e18);
+        priceChanges.push(prices);
+      }
 
       console.log("tokenA:+,tokenB:*");
-      for (let i = 0; i < priceChangesA.length; i++) {
-        console.log(`${"*".repeat(priceChangesA[i].toString() + 1)}`);
-        console.log(`${"+".repeat(priceChangesB[i].toString() + 1)}`);
+      for (let i = 0; i < priceChanges.length; i++) {
+        console.log(`${"*".repeat(priceChanges[i].priceA.toString() + 1)}`);
+        console.log(`${"+".repeat(priceChanges[i].priceB.toString() + 1)}`);
       }
-      console.log(
-        "______________________________________________________________"
-      );
-      expect(priceA > priceB);
+      console.log("______________________________________________________________");
+
+      expect(priceChanges[priceChanges.length - 1].priceA > priceChanges[priceChanges.length - 1].priceB);
     });
   });
   // Add more tests for edge cases and error handling
