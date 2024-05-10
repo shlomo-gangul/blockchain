@@ -7,7 +7,7 @@ describe("GameFactory", () => {
   beforeEach(() => {
     gameFactory = new GameFactory();
   });
-
+  git;
   it("should create a DilemmaGame", () => {
     const game = gameFactory.createGame("DilemmaGame");
     expect(game).toBeInstanceOf(DilemmaGame);
