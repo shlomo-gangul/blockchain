@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-contract DillemaGame is {
+contract DillemaGame {
     address public player1;
     address public player2;
 
@@ -11,16 +11,21 @@ contract DillemaGame is {
     uint256 public player1Deposit;
     uint256 public player2Deposit;
 
-    
-
     bool public player1ChoiceCommitted;
     bool public player2ChoiceCommitted;
 
     bool public player1DepositCommitted;
     bool public player2DepositCommitted;
 
-    constructor() {
+    ERC20 token;
+    uint256 tokenAmount;
+    uint256 gameDuration;
+
+    constructor(_token, _tokenAmount, _gameDuration) {
         player1 = msg.sender;
-        player2= address(0);
+        player2 = address(0);
+        token = _token;
+        tokenAmount = _tokenAmount;
+        gameDuration = _gameDuration;
     }
 }
